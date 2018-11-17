@@ -16,10 +16,12 @@ module AASM
       def aasm_write_state(state, name=:default)
         attribute_name = self.class.aasm(name).attribute_name
         old_value = aasm_read_attribute(attribute_name)
+        new_value = aasm_raw_attribute_value(state, name)
+        return true if transiting_to_same_state? new_value, old_value
         aasm_write_state_attribute state, name
 
         success = if aasm_skipping_validations(name)
-          aasm_update_column(attribute_name, aasm_raw_attribute_value(state, name))
+          aasm_update_column(attribute_name, new_value)
         else
           aasm_save
         end
@@ -79,6 +81,10 @@ module AASM
 
       def aasm_supports_transactions?
         true
+      end
+
+      def transiting_to_same_state?(state, old_state)
+        state == old_state
       end
 
       def aasm_write_state_attribute(state, name=:default)
